@@ -1,1 +1,3 @@
 /.idea
+/pinscrapy/__pycache__
+/pinscrapy/spiders/__pycache__
