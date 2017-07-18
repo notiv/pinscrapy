@@ -22,12 +22,6 @@ class PinscrapyItem(scrapy.Item):
     tags = scrapy.Field()  # array of tags
     author = scrapy.Field()
 
-    # fields that we get when downloading the link
-    html_content = scrapy.Field()
-    html_code = scrapy.Field()
-    html_content_size = scrapy.Field()
-    html_fetch_date = scrapy.Field()
-
     # fields that we get when parsing the
     # url_slug (e.g. https://pinboard.in/url:f81a7954a8ab701aa47ddaef236d90fea167dfae/)
     user_list = scrapy.Field()  # array of users who have saved this pin as well

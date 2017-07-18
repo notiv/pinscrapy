@@ -38,6 +38,9 @@ DOWNLOAD_DELAY = 3
 # Disable cookies (enabled by default)
 COOKIES_ENABLED = False
 
+# Feed format
+FEED_FORMAT = 'jsonlines'
+
 # Disable Telnet Console (enabled by default)
 #TELNETCONSOLE_ENABLED = False
 

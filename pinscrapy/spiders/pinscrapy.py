@@ -22,8 +22,6 @@ class PinSpider(scrapy.Spider):
         self.logger.info("[PINSPIDER] Bookmarks on this page: %d" % len(bookmarks))
 
         for bookmark in bookmarks:
-            pass
-            # print(bookmarks)
             yield self.parse_bookmark(json.loads(bookmark))
 
         previous_page = response.css('a#top_earlier::attr(href)').extract_first()
@@ -42,33 +40,34 @@ class PinSpider(scrapy.Spider):
         pin['title'] = bookmark['title']
 
         created_at = datetime.datetime.strptime(bookmark['created'], '%Y-%m-%d %H:%M:%S')
-        pin_fetch_date = datetime.datetime.utcnow().isoformat()
         pin['created_at'] = created_at.isoformat()
+        pin['pin_fetch_date'] = datetime.datetime.utcnow().isoformat()
 
         pin['tags'] = bookmark['tags']
         pin['author'] = bookmark['author']
 
-        request = scrapy.Request(pin['url'], callback=self.parse_external_link)
-        request.meta['pin'] = pin  # this passes over the pin item to the request
+        request = scrapy.Request('https://pinboard.in/url:' + pin['url_slug'], callback=self.parse_url_slug)
+        request.meta['pin'] = pin
+        #self.logger.info("[PINSPIDER] : Parse Slug URL: %d" % len(pin['user_list']))
         return request
 
-    def parse_external_link(self, response):
+    def parse_url_slug(self, response):
         pin = response.meta['pin']
 
-        pin['html_fetch_date'] = datetime.datetime.utcnow().isoformat()
-        pin['html_code'] = response.status
-        pin['html_content'] = ""
-        pin['html_content_size'] = 0
+        pin['all_tags'] = []
+        pin['user_list'] = []
+
         if response.body:
             soup = BeautifulSoup(response.body, 'html.parser')
-            # http://stackoverflow.com/questions/22799990/beatifulsoup4-get-text-still-has-javascript
-            for script in soup(["script", "style"]):
-                script.extract()
-            text = soup.get_text()
-            lines = (line.strip() for line in text.splitlines())
-            chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
-            text = '\n'.join(chunk for chunk in chunks if chunk)
-            pin['html_content'] = text
-            pin['html_content_size'] = len(pin['html_content'])
+
+            tagcloud = soup.find_all("div", id="tag_cloud")
+            all_tags = [element.get_text() for element in tagcloud[0].find_all(class_='tag')]
+
+            users = soup.find_all("div", class_="bookmark")
+            user_list = [re.findall('/u:(.*)/t:', element.a['href'], re.DOTALL) for element in users]
+            user_list_flat = sum(user_list, []) # Change from list of lists to list
+
+            pin['all_tags'] = all_tags
+            pin['user_list'] = user_list_flat
 
         return pin
