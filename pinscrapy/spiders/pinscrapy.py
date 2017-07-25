@@ -6,7 +6,7 @@ from pinscrapy.items import PinscrapyItem
 from bs4 import BeautifulSoup
 import datetime, re, json
 
-
+# Based on pinboogle spider (https://github.com/spare-time/pinboogle)
 class PinSpider(scrapy.Spider):
     name = 'pinboard'
 
