@@ -16,6 +16,11 @@ class PinSpider(scrapy.Spider):
         self.start_urls = ['https://pinboard.in/u:%s/before:%s' % (user, before)]
         self.logger.info("[PINSPIDER] Start URL: %s" % self.start_urls[0])
 
+        self.count_users = 0
+        self.user_limit = 3
+        self.users_parsed = {}
+        self.url_slugs_parsed = {}
+
     def parse(self, response):
         # fetches json representation of bookmarks instead of using css or xpath
         bookmarks = re.findall('bmarks\[\d+\] = (\{.*?\});', response.body.decode('utf-8'), re.DOTALL | re.MULTILINE)
@@ -31,6 +36,10 @@ class PinSpider(scrapy.Spider):
             yield scrapy.Request(previous_page, callback=self.parse)
 
     def parse_bookmark(self, bookmark):
+        if bookmark['url_slug'] in self.url_slugs_parsed:
+            self.logger.info("[PINSPIDER URL has already been parsed.")
+            return
+
         pin = PinscrapyItem()
 
         pin['id'] = bookmark['id']
@@ -46,6 +55,7 @@ class PinSpider(scrapy.Spider):
         pin['tags'] = bookmark['tags']
         pin['author'] = bookmark['author']
 
+        self.url_slugs_parsed[pin['url_slug']] = 1
         request = scrapy.Request('https://pinboard.in/url:' + pin['url_slug'], callback=self.parse_url_slug)
         request.meta['pin'] = pin
         #self.logger.info("[PINSPIDER] : Parse Slug URL: %d" % len(pin['user_list']))
