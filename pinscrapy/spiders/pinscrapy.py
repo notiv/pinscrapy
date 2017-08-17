@@ -20,14 +20,29 @@ class PinSpider(scrapy.Spider):
         self.user_limit = 3
         self.users_parsed = {}
         self.url_slugs_parsed = {}
+        self.before = before
 
     def parse(self, response):
         # fetches json representation of bookmarks instead of using css or xpath
         bookmarks = re.findall('bmarks\[\d+\] = (\{.*?\});', response.body.decode('utf-8'), re.DOTALL | re.MULTILINE)
         self.logger.info("[PINSPIDER] Bookmarks on this page: %d" % len(bookmarks))
 
-        for bookmark in bookmarks:
-            yield self.parse_bookmark(json.loads(bookmark))
+        current_user = json.loads(bookmarks[0])['author']
+
+        user_in_dict = self.users_parsed.get(current_user)
+        if user_in_dict is None:
+            self.count_users += 1
+            self.users_parsed[current_user] = 1
+        else:
+            # Count pages for user
+            self.users_parsed[current_user] += 1
+
+        for b in bookmarks:
+            bookmark = json.loads(b)
+            if bookmark['url_slug'] in self.url_slugs_parsed:
+                self.logger.info("[PINSPIDER URL %s has already been parsed." % bookmark['url_slug'])
+            else:
+                yield self.parse_bookmark(bookmark)
 
         previous_page = response.css('a#top_earlier::attr(href)').extract_first()
         if previous_page:
@@ -36,9 +51,6 @@ class PinSpider(scrapy.Spider):
             yield scrapy.Request(previous_page, callback=self.parse)
 
     def parse_bookmark(self, bookmark):
-        if bookmark['url_slug'] in self.url_slugs_parsed:
-            self.logger.info("[PINSPIDER URL has already been parsed.")
-            return
 
         pin = PinscrapyItem()
 
@@ -57,8 +69,20 @@ class PinSpider(scrapy.Spider):
 
         self.url_slugs_parsed[pin['url_slug']] = 1
         request = scrapy.Request('https://pinboard.in/url:' + pin['url_slug'], callback=self.parse_url_slug)
+
         request.meta['pin'] = pin
-        #self.logger.info("[PINSPIDER] : Parse Slug URL: %d" % len(pin['user_list']))
+        self.logger.info("[PINSPIDER] : Parse Slug URL %s from user %s" % (pin['url_slug'], pin['author']))
+
+        # for user in pin['user_list_flat']:
+        #     if user in self.users_parsed:
+        #         self.logger.info("[PINSPIDER] : User %s already parsed." % user)
+        #     else:
+        #         # if self.count_users <= self.user_limit:
+        #         yield scrapy.Request('https://pinboard.in/u:%s/before:%s' % (user, self.before), callback=self.parse)
+        #         return
+
+        # self.logger.info("=============> %d" % pin['user_list_length'])
+
         return request
 
     def parse_url_slug(self, response):
@@ -79,5 +103,13 @@ class PinSpider(scrapy.Spider):
 
             pin['all_tags'] = all_tags
             pin['user_list'] = user_list_flat
+            pin['user_list_length'] = len(user_list_flat)
 
+            # for user in user_list_flat:
+            #     if user in self.users_parsed:
+            #         self.logger.info("[PINSPIDER] : User %s already parsed." % user)
+            #         return
+            #
+            #     if self.count_users <= self.user_limit:
+            #         yield scrapy.Request('https://pinboard.in/u:%s/before:%s' % (user, self.before), callback=self.parse)
         return pin

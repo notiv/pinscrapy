@@ -1,4 +1,4 @@
 
 # Script to use for debugging scrapy within PyCharm
 from scrapy import cmdline
-cmdline.execute("scrapy crawl pinboard -a user=notiv ".split())
+cmdline.execute("scrapy crawl pinboard -a user=notiv -o export.json".split())
