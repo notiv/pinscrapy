@@ -22,11 +22,6 @@ class PinscrapyItem(scrapy.Item):
     tags = scrapy.Field()  # array of tags
     author = scrapy.Field()
 
-    # fields that we get when parsing the
-    # url_slug (e.g. https://pinboard.in/url:f81a7954a8ab701aa47ddaef236d90fea167dfae/)
-    user_list = scrapy.Field()  # array of users who have saved this pin as well
-    all_tags = scrapy.Field()  # array of tags from all users
-
     # JSON that's on pinboard results page
     # {
     # "id":"95383442",
@@ -62,4 +57,12 @@ class PinscrapyItem(scrapy.Item):
     # "author_id":"60410",
     # "url_slug":"c9f75b6d4b90340713effa1ddac4f876778c4f1b",
     # "url_count":"145"
-    # };
+    # }
+
+class UrlSlugItem(scrapy.Item):
+    # fields that we get when parsing the
+    # url_slug (e.g. https://pinboard.in/url:f81a7954a8ab701aa47ddaef236d90fea167dfae/)
+    user_list = scrapy.Field()  # array of users who have saved this pin as well
+    user_list_length = scrapy.Field() # number of users who have saved this pin as well
+    all_tags = scrapy.Field()  # array of tags from all users
+
