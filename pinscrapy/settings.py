@@ -25,10 +25,10 @@ AJAXCRAWL_ENABLED = True
 DOWNLOAD_TIMEOUT = 10
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
-CONCURRENT_REQUESTS = 1
+CONCURRENT_REQUESTS = 32
 
-CLOSESPIDER_PAGECOUNT = 100
-#CLOSESPIDER_ITEMCOUNT = 3
+CLOSESPIDER_PAGECOUNT = 300
+CLOSESPIDER_ITEMCOUNT = 300
 
 # Configure a delay for requests for the same website (default: 0)
 # See http://scrapy.readthedocs.org/en/latest/topics/settings.html#download-delay
