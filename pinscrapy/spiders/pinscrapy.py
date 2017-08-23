@@ -20,6 +20,7 @@ class PinSpider(scrapy.Spider):
         self.users_parsed = {}
         self.url_slugs_parsed = {}
         self.before = before
+        self.re_url_extract = re.compile('url:(.*)')
 
     def parse(self, response):
         # fetches json representation of bookmarks instead of using css or xpath
@@ -82,6 +83,8 @@ class PinSpider(scrapy.Spider):
             user_list = [re.findall('/u:(.*)/t:', element.a['href'], re.DOTALL) for element in users]
             user_list_flat = sum(user_list, []) # Change from list of lists to list
 
+            url_slug['url_slug'] = re.findall('url:(.*)', response.url)[0]
+            url_slug['url'] = response.url
             url_slug['user_list'] = user_list_flat
             url_slug['user_list_length'] = len(user_list_flat)
             url_slug['all_tags'] = all_tags
