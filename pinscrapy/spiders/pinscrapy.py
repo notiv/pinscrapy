@@ -2,7 +2,7 @@
 
 import scrapy
 
-from pinscrapy.items import PinscrapyItem, UrlSlugItem
+from pinscrapy.items import PinItem, UrlSlugItem
 from bs4 import BeautifulSoup
 import datetime, re, json
 
@@ -52,7 +52,7 @@ class PinSpider(scrapy.Spider):
             yield scrapy.Request(previous_page, callback=self.parse)
 
     def parse_bookmark(self, bookmark):
-        pin = PinscrapyItem()
+        pin = PinItem()
 
         pin['id'] = bookmark['id']
         pin['url'] = bookmark['url']
