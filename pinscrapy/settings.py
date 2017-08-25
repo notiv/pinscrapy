@@ -42,9 +42,14 @@ DOWNLOAD_DELAY = 2
 COOKIES_ENABLED = False
 
 # Feed format
-FEED_FORMAT = 'jsonlines'
-FEED_URI = 'export.json'
-FEED_EXPORT_ENCODING = 'utf-8'
+# FEED_FORMAT = 'jsonlines'
+# FEED_URI = 'export.json'
+# FEED_EXPORT_ENCODING = 'utf-8'
+
+# AWS
+# NOTE: There should be a credentials file in the ~/.aws/ folder containing AWS_ACCESS_KEY_ID and
+# AWS_SECRET_ACCESS_KEY
+AWS_BUCKET_NAME = 'vv-pinborg-v1'
 
 DEPTH_PRIORITY = 1
 SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleFifoDiskQueue'
@@ -80,7 +85,8 @@ SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.FifoMemoryQueue'
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-   'pinscrapy.pipelines.PinscrapyPipeline': 300,
+   'pinscrapy.pipelines.PinscrapyPipeline': 400,
+   'pinscrapy.pipelines.PinscrapyPipeLineS3': 300,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
