@@ -28,7 +28,7 @@ DOWNLOAD_TIMEOUT = 10
 CONCURRENT_REQUESTS = 1
 
 # CLOSESPIDER_PAGECOUNT = 10000
-CLOSESPIDER_ITEMCOUNT = 30000
+CLOSESPIDER_ITEMCOUNT = 50000
 
 # Configure a delay for requests for the same website (default: 0)
 # See http://scrapy.readthedocs.org/en/latest/topics/settings.html#download-delay
