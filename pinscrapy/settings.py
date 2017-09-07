@@ -28,7 +28,7 @@ DOWNLOAD_TIMEOUT = 10
 CONCURRENT_REQUESTS = 1
 
 # CLOSESPIDER_PAGECOUNT = 10000
-CLOSESPIDER_ITEMCOUNT = 50000
+CLOSESPIDER_ITEMCOUNT = 20000
 
 # Configure a delay for requests for the same website (default: 0)
 # See http://scrapy.readthedocs.org/en/latest/topics/settings.html#download-delay
@@ -45,6 +45,9 @@ COOKIES_ENABLED = False
 # FEED_FORMAT = 'jsonlines'
 # FEED_URI = 'export.json'
 # FEED_EXPORT_ENCODING = 'utf-8'
+
+MONGO_URI = 'localhost:27017'
+MONGO_DATABASE = 'local'
 
 # AWS
 # NOTE: There should be a credentials file in the ~/.aws/ folder containing AWS_ACCESS_KEY_ID and
@@ -86,7 +89,8 @@ SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.FifoMemoryQueue'
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
    'pinscrapy.pipelines.PinscrapyPipeline': 400,
-   'pinscrapy.pipelines.PinscrapyPipeLineS3': 300,
+   # 'pinscrapy.pipelines.PinscrapyPipeLineS3': 300,
+   'pinscrapy.pipelines.PinscrapyMongoPipeline': 500
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

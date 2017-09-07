@@ -6,6 +6,9 @@
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
 
 import json
+import pymongo
+import boto3
+from scrapy.conf import settings
 
 def item_type(item):
     return type(item).__name__.replace('Item','').lower()  # UrlSlugItem => urlslug
@@ -38,8 +41,6 @@ class PinscrapyPipeLineS3(object):
         self.bucket_name = None
 
     def open_spider(self, spider):
-        import boto3
-        from scrapy.conf import settings
 
         self.s3client = boto3.client('s3')
         self.bucket_name = spider.settings.get('AWS_BUCKET_NAME')
@@ -73,4 +74,45 @@ class PinscrapyPipeLineS3(object):
 
         return item
 
+class PinscrapyMongoPipeline(object):
 
+    pin_collection_name = 'pins'
+    urlslug_collection_name = 'urlslugs'
+
+    def __init__(self, mongo_uri, mongo_db):
+        self.mongo_uri = mongo_uri
+        self.mongo_db = mongo_db
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(
+            mongo_uri=crawler.settings.get('MONGO_URI'),
+            mongo_db=crawler.settings.get('MONGO_DATABASE', 'items')
+        )
+
+    def open_spider(self, spider):
+        self.client = pymongo.MongoClient(self.mongo_uri)
+        self.db = self.client[self.mongo_db]
+        if not self.db.get_collection(self.pin_collection_name):
+            self.db.create_collection(self.pin_collection_name)
+        if not self.db.get_collection(self.urlslug_collection_name):
+            self.db.create_collection(self.urlslug_collection_name)
+
+        # Create index (if none exists) to make updates faster
+        self.db[self.pin_collection_name].create_index([('url_slug', pymongo.ASCENDING), ('author', pymongo.ASCENDING), ('create_at', pymongo.ASCENDING)])
+        self.db[self.pin_collection_name].create_index([('author', pymongo.ASCENDING)])
+        self.db[self.urlslug_collection_name].create_index([('url_slug', pymongo.ASCENDING)])
+
+    def close_spider(self, spider):
+        self.client.close()
+
+    def process_item(self, item, spider):
+        itm_type = item_type(item)
+
+        if itm_type == 'pin':
+            # self.db[self.pin_collection_name].insert_one(dict(item))
+            # self.db[self.pin_collection_name].update({'url_slug': item['url_slug']}, {'$set': {'pin_fetch_date': item['pin_fetch_date']}}, upsert = True)
+             self.db[self.pin_collection_name].update({'url_slug': item['url_slug']}, dict(item), upsert=True)
+        elif itm_type == 'urlslug':
+              self.db[self.urlslug_collection_name].update({'url_slug': item['url_slug']}, dict(item), upsert=True)
+        return item
