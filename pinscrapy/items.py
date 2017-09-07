@@ -67,4 +67,5 @@ class UrlSlugItem(scrapy.Item):
     user_list = scrapy.Field()  # array of users who have saved this pin as well
     user_list_length = scrapy.Field() # number of users who have saved this pin as well
     all_tags = scrapy.Field()  # array of tags from all users
+    url_slug_fetch_date = scrapy.Field()
 

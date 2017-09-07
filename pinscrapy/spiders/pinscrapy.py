@@ -88,6 +88,7 @@ class PinSpider(scrapy.Spider):
             url_slug['user_list'] = user_list_flat
             url_slug['user_list_length'] = len(user_list_flat)
             url_slug['all_tags'] = all_tags
+            url_slug['url_slug_fetch_date'] = datetime.datetime.utcnow().isoformat()
 
             yield url_slug
             for user in user_list_flat:

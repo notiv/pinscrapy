@@ -80,7 +80,6 @@ class PinscrapyMongoPipeline(object):
     urlslug_collection_name = 'urlslugs'
 
     def __init__(self, mongo_uri, mongo_db):
-
         self.mongo_uri = mongo_uri
         self.mongo_db = mongo_db
 
@@ -94,6 +93,15 @@ class PinscrapyMongoPipeline(object):
     def open_spider(self, spider):
         self.client = pymongo.MongoClient(self.mongo_uri)
         self.db = self.client[self.mongo_db]
+        if not self.db.get_collection(self.pin_collection_name):
+            self.db.create_collection(self.pin_collection_name)
+        if not self.db.get_collection(self.urlslug_collection_name):
+            self.db.create_collection(self.urlslug_collection_name)
+
+        # Create index (if none exists) to make updates faster
+        self.db[self.pin_collection_name].create_index([('url_slug', pymongo.ASCENDING), ('author', pymongo.ASCENDING), ('create_at', pymongo.ASCENDING)])
+        self.db[self.pin_collection_name].create_index([('author', pymongo.ASCENDING)])
+        self.db[self.urlslug_collection_name].create_index([('url_slug', pymongo.ASCENDING)])
 
     def close_spider(self, spider):
         self.client.close()
@@ -102,7 +110,9 @@ class PinscrapyMongoPipeline(object):
         itm_type = item_type(item)
 
         if itm_type == 'pin':
-            self.db[self.pin_collection_name].insert_one(dict(item))
+            # self.db[self.pin_collection_name].insert_one(dict(item))
+            # self.db[self.pin_collection_name].update({'url_slug': item['url_slug']}, {'$set': {'pin_fetch_date': item['pin_fetch_date']}}, upsert = True)
+             self.db[self.pin_collection_name].update({'url_slug': item['url_slug']}, dict(item), upsert=True)
         elif itm_type == 'urlslug':
-            self.db[self.urlslug_collection_name].insert_one(dict(item))
+              self.db[self.urlslug_collection_name].update({'url_slug': item['url_slug']}, dict(item), upsert=True)
         return item
