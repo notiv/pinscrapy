@@ -1,4 +1,4 @@
-# pinborg
+# pinscrapy
 A crawler that scrapes [Pinboard](https://pinboard.in) bookmarks recursively.  The algorithm works as follows:
 
 1. It starts with a user and scrapes all bookmarks
