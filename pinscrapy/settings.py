@@ -28,7 +28,7 @@ DOWNLOAD_TIMEOUT = 10
 CONCURRENT_REQUESTS = 1
 
 # CLOSESPIDER_PAGECOUNT = 10000
-CLOSESPIDER_ITEMCOUNT = 20000
+CLOSESPIDER_ITEMCOUNT = 30000
 
 # Configure a delay for requests for the same website (default: 0)
 # See http://scrapy.readthedocs.org/en/latest/topics/settings.html#download-delay
@@ -52,7 +52,7 @@ MONGO_DATABASE = 'local'
 # AWS
 # NOTE: There should be a credentials file in the ~/.aws/ folder containing AWS_ACCESS_KEY_ID and
 # AWS_SECRET_ACCESS_KEY
-AWS_BUCKET_NAME = 'vv-pinborg-v1'
+AWS_BUCKET_NAME = 'vv-pinborg-v2'
 
 DEPTH_PRIORITY = 1
 SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleFifoDiskQueue'
@@ -90,7 +90,8 @@ SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.FifoMemoryQueue'
 ITEM_PIPELINES = {
    'pinscrapy.pipelines.PinscrapyPipeline': 400,
    # 'pinscrapy.pipelines.PinscrapyPipeLineS3': 300,
-   'pinscrapy.pipelines.PinscrapyMongoPipeline': 500
+   # 'pinscrapy.pipelines.PinscrapyMongoPipeline': 500,
+   'pinscrapy.pipelines.PinscrapyPipelineLargeParquetFileS3': 600
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

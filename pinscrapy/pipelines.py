@@ -8,6 +8,9 @@
 import json
 import pymongo
 import boto3
+import s3fs
+import pandas as pd
+from fastparquet import write
 from scrapy.conf import settings
 
 def item_type(item):
@@ -116,3 +119,32 @@ class PinscrapyMongoPipeline(object):
         elif itm_type == 'urlslug':
               self.db[self.urlslug_collection_name].update({'url_slug': item['url_slug']}, dict(item), upsert=True)
         return item
+
+class PinscrapyPipelineLargeParquetFileS3(object):
+
+    def __init__(self):
+        self.s3 = s3fs.S3FileSystem()
+        self.s3open = self.s3.open
+
+        self.large_df_user = pd.DataFrame()
+        self.large_df_urlslug = pd.DataFrame()
+        self.bucket_name = None
+
+    def open_spider(self, spider):
+        self.bucket_name = spider.settings.get('AWS_BUCKET_NAME')
+
+    def close_spider(self, spider):
+        write('%s/user_%s.parq.gzip' % (self.bucket_name, spider.start_user), self.large_df_user, compression='GZIP', open_with=self.s3open)
+        write('%s/url_slug_%s.parq.gzip' % (self.bucket_name, spider.start_user), self.large_df_urlslug, compression='GZIP', open_with=self.s3open)
+
+    def process_item(self, item, spider):
+        itm_type = item_type(item)
+
+        if itm_type == 'pin':
+            self.large_df_user = self.large_df_user.append(pd.DataFrame([dict(item)]), ignore_index = True)
+
+        elif itm_type == 'urlslug':
+            self.large_df_urlslug = self.large_df_urlslug.append(pd.DataFrame([dict(item)]), ignore_index = True)
+
+        return item
+

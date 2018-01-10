@@ -14,6 +14,7 @@ class PinSpider(scrapy.Spider):
     def __init__(self, user='notiv', before='3000000000', *args, **kwargs):
         super(PinSpider, self).__init__(*args, **kwargs)
         self.start_urls = ['https://pinboard.in/u:%s/before:%s' % (user, before)]
+        self.start_user = user
         self.logger.info("[PINSPIDER] Start URL: %s" % self.start_urls[0])
 
         self.count_users = 0
