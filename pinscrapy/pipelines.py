@@ -18,6 +18,12 @@ def item_type(item):
 
 class PinscrapyPipeline(object):
 
+    def open_spider(self, spider):
+        pass
+
+    def close_spider(self, spider):
+        spider.logger.info("[PINSPIDER] There are %d requests in the queue that will not be parsed." % len(spider.crawler.engine.slot.scheduler))
+
     def process_item(self, item, spider):
         itm_type = item_type(item)
 
@@ -31,6 +37,12 @@ class PinscrapyPipeline(object):
         elif itm_type == 'urlslug':
             url_slug = item['url_slug']
             self.file = open('url_slugs/%s_%s.jl' %(itm_type, url_slug), 'w')
+            line = json.dumps(dict(item)) + "\n"
+            self.file.write(line)
+            self.file.close()
+        elif itm_type == 'page':
+            url_slug = item['page_url_slug']
+            self.file = open('pages/%s_%s.jl' %(itm_type, url_slug), 'w')
             line = json.dumps(dict(item)) + "\n"
             self.file.write(line)
             self.file.close()
@@ -55,7 +67,7 @@ class PinscrapyPipeLineS3(object):
             spider.logger.info('[PINSPIDER] Bucket %s exists' % self.bucket_name)
 
     def close_spider(self, spider):
-        pass
+        spider.logger.info("[PINSPIDER] There are %d requests in the queue that will not be parsed." % len(spider.crawler.engine.slot.scheduler))
 
     def process_item(self, item, spider):
         itm_type = item_type(item)
@@ -67,11 +79,16 @@ class PinscrapyPipeLineS3(object):
             object_key = 'users/%s_%s_%s.jl' %(itm_type, author, url_slug)
             object_content = json.dumps(dict(item)) + "\n"
             resp = self.s3client.put_object(Bucket=self.bucket_name, Key=object_key, Body=object_content)
-            print(resp)
         elif itm_type == 'urlslug':
             url_slug = item['url_slug']
 
             object_key = 'url_slugs/%s_%s.jl' %(itm_type, url_slug)
+            object_content = json.dumps(dict(item)) + "\n"
+            self.s3client.put_object(Bucket=self.bucket_name, Key=object_key, Body=object_content)
+        elif itm_type == 'page':
+            url_slug = item['page_url_slug']
+
+            object_key = 'pages/%s_%s.jl' %(itm_type, url_slug)
             object_content = json.dumps(dict(item)) + "\n"
             self.s3client.put_object(Bucket=self.bucket_name, Key=object_key, Body=object_content)
 
@@ -81,6 +98,7 @@ class PinscrapyMongoPipeline(object):
 
     pin_collection_name = 'pins'
     urlslug_collection_name = 'urlslugs'
+    external_page_collection_name = 'external_pages'
 
     def __init__(self, mongo_uri, mongo_db):
         self.mongo_uri = mongo_uri
@@ -100,24 +118,28 @@ class PinscrapyMongoPipeline(object):
             self.db.create_collection(self.pin_collection_name)
         if not self.db.get_collection(self.urlslug_collection_name):
             self.db.create_collection(self.urlslug_collection_name)
+        if not self.db.get_collection(self.external_page_collection_name):
+            self.db.create_collection(self.external_page_collection_name)
 
         # Create index (if none exists) to make updates faster
         self.db[self.pin_collection_name].create_index([('url_slug', pymongo.ASCENDING), ('author', pymongo.ASCENDING), ('create_at', pymongo.ASCENDING)])
         self.db[self.pin_collection_name].create_index([('author', pymongo.ASCENDING)])
         self.db[self.urlslug_collection_name].create_index([('url_slug', pymongo.ASCENDING)])
+        self.db[self.external_page_collection_name].create_index([('url_slug', pymongo.ASCENDING)])
 
     def close_spider(self, spider):
+        spider.logger.info("[PINSPIDER] There are %d requests in the queue that will not be parsed." % len(spider.crawler.engine.slot.scheduler))
         self.client.close()
 
     def process_item(self, item, spider):
         itm_type = item_type(item)
 
         if itm_type == 'pin':
-            # self.db[self.pin_collection_name].insert_one(dict(item))
-            # self.db[self.pin_collection_name].update({'url_slug': item['url_slug']}, {'$set': {'pin_fetch_date': item['pin_fetch_date']}}, upsert = True)
-             self.db[self.pin_collection_name].update({'url_slug': item['url_slug']}, dict(item), upsert=True)
+            self.db[self.pin_collection_name].update({'url_slug': item['url_slug']}, dict(item), upsert=True)
         elif itm_type == 'urlslug':
-              self.db[self.urlslug_collection_name].update({'url_slug': item['url_slug']}, dict(item), upsert=True)
+            self.db[self.urlslug_collection_name].update({'url_slug': item['url_slug']}, dict(item), upsert=True)
+        elif itm_type == 'page':
+            self.db[self.external_page_collection_name].update({'url_slug': item['page_url_slug']}, dict(item), upsert=True)
         return item
 
 class PinscrapyPipelineLargeParquetFileS3(object):
@@ -128,6 +150,7 @@ class PinscrapyPipelineLargeParquetFileS3(object):
 
         self.large_df_user = pd.DataFrame()
         self.large_df_urlslug = pd.DataFrame()
+        self.large_df_page = pd.DataFrame()
         self.bucket_name = None
 
     def open_spider(self, spider):
@@ -136,15 +159,20 @@ class PinscrapyPipelineLargeParquetFileS3(object):
     def close_spider(self, spider):
         write('%s/user_%s.parq.gzip' % (self.bucket_name, spider.start_user), self.large_df_user, compression='GZIP', open_with=self.s3open)
         write('%s/url_slug_%s.parq.gzip' % (self.bucket_name, spider.start_user), self.large_df_urlslug, compression='GZIP', open_with=self.s3open)
+        write('%s/page_%s.parq.gzip' % (self.bucket_name, spider.start_user), self.large_df_page, compression='GZIP', open_with=self.s3open)
+        spider.logger.info("[PINSPIDER] There are %d requests in the queue that will not be parsed." % len(spider.crawler.engine.slot.scheduler))
 
     def process_item(self, item, spider):
         itm_type = item_type(item)
 
         if itm_type == 'pin':
-            self.large_df_user = self.large_df_user.append(pd.DataFrame([dict(item)]), ignore_index = True)
+            self.large_df_user = self.large_df_user.append(pd.DataFrame([dict(item)]), ignore_index=True)
 
         elif itm_type == 'urlslug':
-            self.large_df_urlslug = self.large_df_urlslug.append(pd.DataFrame([dict(item)]), ignore_index = True)
+            self.large_df_urlslug = self.large_df_urlslug.append(pd.DataFrame([dict(item)]), ignore_index=True)
+
+        elif itm_type == 'page':
+            self.large_df_page = self.large_df_page.append(pd.DataFrame([dict(item)]), ignore_index=True)
 
         return item
 

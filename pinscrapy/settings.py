@@ -18,6 +18,9 @@ NEWSPIDER_MODULE = 'pinscrapy.spiders'
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'pinscrapy (+http://www.yourdomain.com)'
 
+# Parse external webpages or not
+PARSE_EXTERNAL_LINKS = False
+
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = False
 
@@ -28,7 +31,7 @@ DOWNLOAD_TIMEOUT = 10
 CONCURRENT_REQUESTS = 1
 
 # CLOSESPIDER_PAGECOUNT = 10000
-CLOSESPIDER_ITEMCOUNT = 30000
+CLOSESPIDER_ITEMCOUNT = 300
 
 # Configure a delay for requests for the same website (default: 0)
 # See http://scrapy.readthedocs.org/en/latest/topics/settings.html#download-delay
@@ -90,7 +93,7 @@ SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.FifoMemoryQueue'
 ITEM_PIPELINES = {
    'pinscrapy.pipelines.PinscrapyPipeline': 400,
    # 'pinscrapy.pipelines.PinscrapyPipeLineS3': 300,
-   # 'pinscrapy.pipelines.PinscrapyMongoPipeline': 500,
+   'pinscrapy.pipelines.PinscrapyMongoPipeline': 500,
    'pinscrapy.pipelines.PinscrapyPipelineLargeParquetFileS3': 600
 }
 
