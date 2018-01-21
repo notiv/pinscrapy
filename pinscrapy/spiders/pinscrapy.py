@@ -2,7 +2,7 @@
 
 import scrapy
 
-from pinscrapy.items import PinItem, UrlSlugItem
+from pinscrapy.items import PinItem, UrlSlugItem, PageItem
 from bs4 import BeautifulSoup
 import datetime, re, json
 
@@ -68,8 +68,13 @@ class PinSpider(scrapy.Spider):
         pin['tags'] = bookmark['tags']
         pin['author'] = bookmark['author']
 
+        self.crawler.stats.inc_value('pin_count')
+
         yield pin
-        yield scrapy.Request('https://pinboard.in/url:' + pin['url_slug'], callback=self.parse_url_slug)
+        if self.settings.get('PARSE_EXTERNAL_LINKS'):
+            yield scrapy.Request(pin['url'], callback=self.parse_external_page, meta={'url_slug': pin['url_slug']}, priority=0)
+
+        yield scrapy.Request('https://pinboard.in/url:' + pin['url_slug'], callback=self.parse_url_slug, priority=0)
 
     def parse_url_slug(self, response):
         url_slug = UrlSlugItem()
@@ -77,6 +82,9 @@ class PinSpider(scrapy.Spider):
         if response.body:
             soup = BeautifulSoup(response.body, 'html.parser')
 
+            self.crawler.stats.inc_value('url_slug_count')
+
+            pin_url = soup.find('a', href=re.compile('^https?://'))['href']
             tagcloud = soup.find_all("div", id="tag_cloud")
             all_tags = [element.get_text() for element in tagcloud[0].find_all(class_='tag')]
 
@@ -86,6 +94,7 @@ class PinSpider(scrapy.Spider):
 
             url_slug['url_slug'] = re.findall('url:(.*)', response.url)[0]
             url_slug['url'] = response.url
+            url_slug['pin_url'] = pin_url
             url_slug['user_list'] = user_list_flat
             url_slug['user_list_length'] = len(user_list_flat)
             url_slug['all_tags'] = all_tags
@@ -97,3 +106,29 @@ class PinSpider(scrapy.Spider):
                     self.logger.info("[PINSPIDER] User %s already parsed." % user)
                 else:
                     yield scrapy.Request('https://pinboard.in/u:%s/before:%s' % (user, self.before), callback=self.parse)
+
+    def parse_external_page(self, response):
+        external_page = PageItem()
+
+        external_page['page_url'] = response.url
+        external_page['page_url_slug'] = response.meta['url_slug']
+        external_page['page_fetch_date'] = datetime.datetime.utcnow().isoformat()
+        external_page['page_code'] = response.status
+        external_page['page_content'] = ''
+        external_page['page_content_size'] = 0
+
+        self.crawler.stats.inc_value('external_pages_count')
+
+        if (response.url[-4:] != '.pdf') and response.body:
+            soup = BeautifulSoup(response.body, 'html.parser')
+            # http://stackoverflow.com/questions/22799990/beatifulsoup4-get-text-still-has-javascript
+            for script in soup(["script", "style"]):
+                script.extract()
+            text = soup.get_text()
+            lines = (line.strip() for line in text.splitlines())
+            chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+            text = '\n'.join(chunk for chunk in chunks if chunk)
+            external_page['page_content'] = text
+            external_page['page_content_size'] = len(external_page['page_content'])
+
+        yield external_page

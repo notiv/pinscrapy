@@ -7,7 +7,6 @@
 
 import scrapy
 
-
 class PinItem(scrapy.Item):
     # define the fields for your item here like:
     # name = scrapy.Field()
@@ -21,6 +20,7 @@ class PinItem(scrapy.Item):
     pin_fetch_date = scrapy.Field()
     tags = scrapy.Field()  # array of tags
     author = scrapy.Field()
+
 
     # JSON that's on pinboard results page
     # {
@@ -64,8 +64,16 @@ class UrlSlugItem(scrapy.Item):
     # url_slug (e.g. https://pinboard.in/url:f81a7954a8ab701aa47ddaef236d90fea167dfae/)
     url_slug = scrapy.Field()
     url = scrapy.Field()
+    pin_url = scrapy.Field()
     user_list = scrapy.Field()  # array of users who have saved this pin as well
     user_list_length = scrapy.Field() # number of users who have saved this pin as well
     all_tags = scrapy.Field()  # array of tags from all users
     url_slug_fetch_date = scrapy.Field()
 
+class PageItem(scrapy.Item):
+    page_url = scrapy.Field()
+    page_url_slug = scrapy.Field()
+    page_fetch_date = scrapy.Field()
+    page_code = scrapy.Field()
+    page_content = scrapy.Field()
+    page_content_size = scrapy.Field()
